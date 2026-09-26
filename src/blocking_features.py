@@ -236,9 +236,9 @@ def get_blocking_keys(row):
         pair = sorted([tokens[0], tokens[1]])
         keys.append(f"{country}_2TOK_{pair[0]}_{pair[1]}")
 
-    # Pass 4: State + First 4 Chars of Name (Tightened to 4 chars to prevent prefix collisions)
-    if state and len(first_tok) >= 4:
-        keys.append(f"{country}_ST_PRE4_{state}_{first_tok[:4]}")
+    # Pass 4: State + First 3 Chars of Name (Pure Selective PRE3)
+    if state and len(first_tok) >= 3:
+        keys.append(f"{country}_ST_PRE3_{state}_{first_tok[:3]}")
 
     # Pass 5: State + Distinct Address Token (Selective filtering with ADDR_STOPWORDS)
     if state:
@@ -265,7 +265,7 @@ def generate_candidate_pairs(
     df_s2,
     df_s3,
     bucket_cap=25,
-    max_candidates=10,
+    max_candidates=12,
     selective_large_bucket=True,
     large_bucket_cap=200
 ):
@@ -293,7 +293,7 @@ def generate_candidate_pairs(
     bucket_cap : int
         Maximum size of an index bucket to expand unconditionally. Default 25.
     max_candidates : int, optional
-        Maximum candidates to retain per S1 entity (default 10).
+        Maximum candidates to retain per S1 entity (default 12).
     selective_large_bucket : bool
         If True, retrieves top candidates from buckets up to large_bucket_cap
         using cheap token pre-filtering instead of discarding the bucket.
@@ -316,8 +316,9 @@ def generate_candidate_pairs(
         'state+second_token': 2.5,
         'pin+prefix': 2.0,
         'country+token_fallback': 2.0,
-        'state+prefix4': 1.5,
         'state+prefix3': 1.5,
+        'state+prefix4': 1.5,
+        'other': 1.0,
     }
 
     # Helper to extract lightweight token features for rapid scoring
@@ -371,25 +372,29 @@ def generate_candidate_pairs(
             if k not in block_index:
                 continue
             bsize = bucket_sizes[k]
-            eff_cap = min(15, bucket_cap) if ('_ST_PRE4_' in k or '_ST_PRE3_' in k) else bucket_cap
 
-            # Infer branch type from key prefix
-            if '_ST_PRE4_' in k:
-                btype = 'state+prefix4'
-            elif '_ST_PRE3_' in k:
+            # Pure Selective PRE3: admission cap 8, large bucket threshold 100, top 1
+            if '_ST_PRE3_' in k:
                 btype = 'state+prefix3'
-            elif '_ST_' in k:
-                btype = 'state+token'
-            elif '_2TOK_' in k:
-                btype = '2tok_conjunction'
-            elif '_ADDR_' in k:
-                btype = 'state+addr_token'
-            elif '_PIN_' in k:
-                btype = 'pin+prefix'
-            elif '_TOK_' in k:
-                btype = 'country+token_fallback'
+                eff_cap = 8
+                eff_large_cap = 100
+                top_take = 1
             else:
-                btype = 'other'
+                eff_cap = bucket_cap
+                eff_large_cap = large_bucket_cap
+                top_take = 2
+                if '_ST_' in k:
+                    btype = 'state+token'
+                elif '_2TOK_' in k:
+                    btype = '2tok_conjunction'
+                elif '_ADDR_' in k:
+                    btype = 'state+addr_token'
+                elif '_PIN_' in k:
+                    btype = 'pin+prefix'
+                elif '_TOK_' in k:
+                    btype = 'country+token_fallback'
+                else:
+                    btype = 'other'
 
             if bsize <= eff_cap:
                 spec = 1.0 / math.sqrt(bsize)
@@ -397,7 +402,7 @@ def generate_candidate_pairs(
                     cm = cand_meta[cid]
                     cm['branches'].add(btype)
                     cm['spec'] += spec
-            elif selective_large_bucket and bsize <= large_bucket_cap:
+            elif selective_large_bucket and bsize <= eff_large_cap:
                 # Selective large-bucket retrieval: filter candidates by token overlap
                 large_matches = []
                 for cid in block_index[k]:
@@ -409,7 +414,7 @@ def generate_candidate_pairs(
                     if n_overlap >= 1 or a_overlap >= 2:
                         large_matches.append((n_overlap * 2.0 + a_overlap, cid))
                 large_matches.sort(reverse=True)
-                for _, cid in large_matches[:2]:
+                for _, cid in large_matches[:top_take]:
                     cm = cand_meta[cid]
                     cm['branches'].add(btype)
                     cm['spec'] += 0.1
