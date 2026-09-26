@@ -178,9 +178,9 @@ def get_blocking_keys(row):
     if pin and first_3:
         keys.append(f"{country}_PIN_{pin}_{first_3}")
 
-    # Pass 3: State + First 3 Chars of Name (Handles minor name variations in same state)
-    if state and first_3:
-        keys.append(f"{country}_ST_PRE3_{state}_{first_3}")
+    # Pass 3: State + First 4 Chars of Name (Tightened to 4 chars to prevent prefix collisions)
+    if state and len(first_tok) >= 4:
+        keys.append(f"{country}_ST_PRE4_{state}_{first_tok[:4]}")
 
     # Pass 4: State + Second Significant Token (Handles prefix additions like new/north/south/city)
     if state and len(tokens) >= 2:
@@ -188,15 +188,16 @@ def get_blocking_keys(row):
         if len(second_tok) >= 3:
             keys.append(f"{country}_ST_{state}_{second_tok}")
 
-    # Pass 5: State + Distinct Address Token (Recovers cross-script or heavily altered names)
+    # Pass 5: State + Distinct Address Token (Min 7 chars, filtered street stopwords)
     if state:
         addr_tokens = [
             t for t in re.findall(r'[a-zA-Z0-9]+', addr_clean.lower())
-            if len(t) >= 5 and t not in {
+            if len(t) >= 7 and t not in {
                 'road', 'street', 'floor', 'lane', 'avenue', 'near',
                 'opposite', 'behind', 'cross', 'main', 'block', 'phase',
                 'nagar', 'colony', 'complex', 'building', 'house', 'first',
-                'second', 'third', 'ground'
+                'second', 'third', 'ground', 'market', 'plaza', 'tower',
+                'center', 'centre', 'square'
             }
         ]
         for t in addr_tokens[:2]:

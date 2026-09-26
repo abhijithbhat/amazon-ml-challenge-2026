@@ -16,4 +16,6 @@ __pycache__/
 
 # Ignore large candidate pairs file (>100MB)
 output/candidate_pairs.tsv
-output/candidate_pairs.tsv
+
+# Intermediate feature samples
+feature_matrix_sample.tsv
