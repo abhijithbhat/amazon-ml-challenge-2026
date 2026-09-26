@@ -1,0 +1,19 @@
+# Ignore the 1GB dataset
+dataset/
+
+# Ignore compiled python files and caches
+__pycache__/
+*.pyc
+
+# Ignore heavy trained models
+*.pkl
+*.joblib
+*.bin
+*.model
+
+# Ignore system files
+.DS_Store
+
+# Ignore large candidate pairs file (>100MB)
+output/candidate_pairs.tsv
+output/candidate_pairs.tsv
