@@ -37,6 +37,55 @@ NAME_STOPWORDS = {
     'shri', 'smt', 'm/s', 'mr', 'mrs', 'ms', 'dr', 'prof'
 }
 
+# Generic address words that create oversized, low-entropy buckets
+ADDR_STOPWORDS = {
+    'road', 'street', 'floor', 'lane', 'avenue', 'near', 'opposite', 'behind', 'cross', 'main', 'block', 'phase',
+    'nagar', 'colony', 'complex', 'building', 'house', 'first', 'second', 'third', 'ground', 'center', 'centre', 'plaza',
+    'tower', 'towers', 'market', 'sector', 'industrial', 'area', 'estate', 'park', 'plot', 'point', 'circle', 'highway',
+    'hwy', 'expressway', 'bldg', 'flr', 'suite', 'ste', 'room', 'door', 'dept', 'office', 'unit', 'bazaar', 'chowk', 'rasta',
+    'gali', 'marg', 'puram', 'city', 'town', 'village', 'state', 'india', 'delhi', 'mumbai', 'bangalore', 'pune', 'chennai',
+    'hyderabad', 'kolkata', 'ahmedabad', 'jaipur', 'surat', 'kanpur'
+}
+
+# Fast Indic character phonetic translation table (Devanagari, Telugu, Tamil, Bengali, Gujarati)
+INDIC_MAP = {
+    # Devanagari (\u0900-\u097F)
+    ord('अ'): 'a', ord('आ'): 'a', ord('इ'): 'i', ord('ई'): 'i', ord('उ'): 'u', ord('ऊ'): 'u', ord('ए'): 'e', ord('ऐ'): 'ai', ord('ओ'): 'o', ord('औ'): 'au',
+    ord('क'): 'k', ord('ख'): 'kh', ord('ग'): 'g', ord('घ'): 'gh', ord('च'): 'ch', ord('छ'): 'ch', ord('ज'): 'j', ord('झ'): 'jh',
+    ord('ट'): 't', ord('ठ'): 'th', ord('ड'): 'd', ord('ढ'): 'dh', ord('ण'): 'n', ord('त'): 't', ord('थ'): 'th', ord('द'): 'd', ord('ध'): 'dh', ord('न'): 'n',
+    ord('प'): 'p', ord('फ'): 'ph', ord('ब'): 'b', ord('भ'): 'bh', ord('म'): 'm', ord('य'): 'y', ord('र'): 'r', ord('ल'): 'l', ord('व'): 'v', ord('श'): 'sh', ord('ष'): 'sh', ord('स'): 's', ord('ह'): 'h',
+    ord('ा'): 'a', ord('ि'): 'i', ord('ी'): 'i', ord('ु'): 'u', ord('ू'): 'u', ord('े'): 'e', ord('ै'): 'ai', ord('ो'): 'o', ord('ौ'): 'au', ord('्'): '', ord('ं'): 'n',
+    # Telugu (\u0C00-\u0C7F)
+    ord('అ'): 'a', ord('ఆ'): 'a', ord('ఇ'): 'i', ord('ఈ'): 'i', ord('ఉ'): 'u', ord('ఊ'): 'u', ord('ఎ'): 'e', ord('ఏ'): 'e', ord('ఐ'): 'ai', ord('ఒ'): 'o', ord('ఓ'): 'o', ord('ఔ'): 'au',
+    ord('క'): 'k', ord('ఖ'): 'kh', ord('గ'): 'g', ord('ఘ'): 'gh', ord('చ'): 'ch', ord('ఛ'): 'ch', ord('జ'): 'j', ord('ఝ'): 'jh',
+    ord('ట'): 't', ord('ఠ'): 'th', ord('డ'): 'd', ord('ఢ'): 'dh', ord('ణ'): 'n', ord('త'): 't', ord('థ'): 'th', ord('ద'): 'd', ord('ధ'): 'dh', ord('న'): 'n',
+    ord('ప'): 'p', ord('ఫ'): 'ph', ord('బ'): 'b', ord('భ'): 'bh', ord('మ'): 'm', ord('య'): 'y', ord('ర'): 'r', ord('ల'): 'l', ord('వ'): 'v', ord('శ'): 'sh', ord('ష'): 'sh', ord('స'): 's', ord('హ'): 'h',
+    ord('ా'): 'a', ord('ి'): 'i', ord('ీ'): 'i', ord('ు'): 'u', ord('ూ'): 'u', ord('ె'): 'e', ord('ే'): 'e', ord('ై'): 'ai', ord('ొ'): 'o', ord('ో'): 'o', ord('ౌ'): 'au', ord('్'): '', ord('ం'): 'n',
+    # Tamil (\u0B80-\u0BFF)
+    ord('அ'): 'a', ord('ஆ'): 'a', ord('இ'): 'i', ord('ஈ'): 'i', ord('உ'): 'u', ord('ஊ'): 'u', ord('எ'): 'e', ord('ஏ'): 'e', ord('ஐ'): 'ai', ord('ஒ'): 'o', ord('ஓ'): 'o', ord('ஔ'): 'au',
+    ord('க'): 'k', ord('ங'): 'ng', ord('ச'): 's', ord('ஞ'): 'ny', ord('ட'): 't', ord('ண'): 'n', ord('த'): 't', ord('ந'): 'n', ord('ப'): 'p', ord('ம'): 'm',
+    ord('ய'): 'y', ord('ர'): 'r', ord('ல'): 'l', ord('வ'): 'v', ord('ழ'): 'zh', ord('ள'): 'l', ord('ற'): 'r', ord('ன'): 'n',
+    ord('ா'): 'a', ord('ி'): 'i', ord('ீ'): 'i', ord('ு'): 'u', ord('ூ'): 'u', ord('ெ'): 'e', ord('ே'): 'e', ord('ை'): 'ai', ord('ொ'): 'o', ord('ோ'): 'o', ord('ௌ'): 'au', ord('்'): '',
+    # Bengali (\u0980-\u09FF)
+    ord('অ'): 'a', ord('আ'): 'a', ord('ই'): 'i', ord('ঈ'): 'i', ord('উ'): 'u', ord('ঊ'): 'u', ord('এ'): 'e', ord('ঐ'): 'ai', ord('ও'): 'o', ord('ঔ'): 'au',
+    ord('ক'): 'k', ord('খ'): 'kh', ord('গ'): 'g', ord('ঘ'): 'gh', ord('চ'): 'ch', ord('ছ'): 'ch', ord('জ'): 'j', ord('ঝ'): 'jh',
+    ord('ট'): 't', ord('ঠ'): 'th', ord('ড'): 'd', ord('ঢ'): 'dh', ord('ণ'): 'n', ord('ত'): 't', ord('থ'): 'th', ord('দ'): 'd', ord('ধ'): 'dh', ord('ন'): 'n',
+    ord('প'): 'p', ord('ফ'): 'ph', ord('ব'): 'b', ord('ভ'): 'bh', ord('ম'): 'm', ord('য'): 'y', ord('র'): 'r', ord('ল'): 'l', ord('শ'): 'sh', ord('ষ'): 'sh', ord('স'): 's', ord('হ'): 'h',
+    ord('া'): 'a', ord('ి'): 'i', ord('ী'): 'i', ord('ু'): 'u', ord('ূ'): 'u', ord('ে'): 'e', ord('ৈ'): 'ai', ord('ো'): 'o', ord('ৌ'): 'au', ord('্'): '', ord('ং'): 'n',
+    # Gujarati (\u0A80-\u0AFF)
+    ord('અ'): 'a', ord('આ'): 'a', ord('ઇ'): 'i', ord('ઈ'): 'i', ord('ઉ'): 'u', ord('ઊ'): 'u', ord('એ'): 'e', ord('ઐ'): 'ai', ord('ઓ'): 'o', ord('ઔ'): 'au',
+    ord('ક'): 'k', ord('ખ'): 'kh', ord('ગ'): 'g', ord('ઘ'): 'gh', ord('ચ'): 'ch', ord('છ'): 'ch', ord('જ'): 'j', ord('ઝ'): 'jh',
+    ord('ટ'): 't', ord('ઠ'): 'th', ord('ડ'): 'd', ord('ઢ'): 'dh', ord('ણ'): 'n', ord('ત'): 't', ord('થ'): 'th', ord('દ'): 'd', ord('ધ'): 'dh', ord('ન'): 'n',
+    ord('પ'): 'p', ord('ફ'): 'ph', ord('બ'): 'b', ord('ભ'): 'bh', ord('મ'): 'm', ord('ય'): 'y', ord('ર'): 'r', ord('લ'): 'l', ord('વ'): 'v', ord('શ'): 'sh', ord('ષ'): 'sh', ord('સ'): 's', ord('હ'): 'h',
+    ord('ા'): 'a', ord('િ'): 'i', ord('ી'): 'i', ord('ુ'): 'u', ord('ૂ'): 'u', ord('ે'): 'e', ord('ૈ'): 'ai', ord('ો'): 'o', ord('ૌ'): 'au', ord('્'): '', ord('ં'): 'n',
+}
+
+def transliterate_indic(text):
+    """Fast Indic script to Latin transliteration via Unicode mapping."""
+    if not text:
+        return ''
+    return text.translate(INDIC_MAP)
+
 
 def extract_postal_code(address, country):
     """
@@ -135,20 +184,22 @@ def extract_state_code(address_clean, country):
 def extract_significant_tokens(name_clean):
     """
     Extract non-generic, significant business name tokens.
-    Filters out legal forms and stop words.
+    Filters out legal forms, stop words, and transliterates Indic characters.
     """
     if not name_clean or not isinstance(name_clean, str):
         return []
 
-    words = re.findall(r'[\w]+', name_clean.lower())
+    # Transliterate Indic characters if present
+    trans = transliterate_indic(name_clean)
+    words = re.findall(r'[\w]+', trans.lower())
     significant = [w for w in words if len(w) > 1 and w not in NAME_STOPWORDS]
     return significant
 
 
 def get_blocking_keys(row):
     """
-    Generate multiple blocking keys for a single record row.
-    Row should contain: country, name_clean, address_clean.
+    Generate multiple independent blocking keys for a single record row.
+    Row should contain: country, name_clean (or business_name), address_clean.
 
     Returns
     -------
@@ -156,15 +207,17 @@ def get_blocking_keys(row):
         Unique blocking key strings for this record.
     """
     country = row.get('country', '')
-    name_clean = row.get('name_clean', '')
-    addr_clean = row.get('address_clean', '')
-
     if not country:
         return []
 
+    name_clean = row.get('name_clean', '')
+    raw_name = row.get('business_name', '')
+    addr_clean = row.get('address_clean', '')
+
+    target_name = name_clean if name_clean else raw_name
+    tokens = extract_significant_tokens(target_name)
     state = extract_state_code(addr_clean, country)
     pin = extract_postal_code(addr_clean, country)
-    tokens = extract_significant_tokens(name_clean)
 
     keys = []
     first_tok = tokens[0] if tokens else ''
@@ -174,40 +227,245 @@ def get_blocking_keys(row):
     if state and first_tok:
         keys.append(f"{country}_ST_{state}_{first_tok}")
 
-    # Pass 2: Postal Code + First Significant Token Prefix (High Precision)
-    if pin and first_3:
-        keys.append(f"{country}_PIN_{pin}_{first_3}")
+    # Pass 2: State + Second Significant Token (Handles prefix additions)
+    if state and len(tokens) >= 2 and len(tokens[1]) >= 3:
+        keys.append(f"{country}_ST_{state}_{tokens[1]}")
 
-    # Pass 3: State + First 4 Chars of Name (Tightened to 4 chars to prevent prefix collisions)
+    # Pass 3: Two-Token Conjunction (Handles missing state & reordered tokens!)
+    if len(tokens) >= 2:
+        pair = sorted([tokens[0], tokens[1]])
+        keys.append(f"{country}_2TOK_{pair[0]}_{pair[1]}")
+
+    # Pass 4: State + First 4 Chars of Name (Tightened to 4 chars to prevent prefix collisions)
     if state and len(first_tok) >= 4:
         keys.append(f"{country}_ST_PRE4_{state}_{first_tok[:4]}")
 
-    # Pass 4: State + Second Significant Token (Handles prefix additions like new/north/south/city)
-    if state and len(tokens) >= 2:
-        second_tok = tokens[1]
-        if len(second_tok) >= 3:
-            keys.append(f"{country}_ST_{state}_{second_tok}")
-
-    # Pass 5: State + Distinct Address Token (Min 7 chars, filtered street stopwords)
+    # Pass 5: State + Distinct Address Token (Selective filtering with ADDR_STOPWORDS)
     if state:
         addr_tokens = [
             t for t in re.findall(r'[a-zA-Z0-9]+', addr_clean.lower())
-            if len(t) >= 7 and t not in {
-                'road', 'street', 'floor', 'lane', 'avenue', 'near',
-                'opposite', 'behind', 'cross', 'main', 'block', 'phase',
-                'nagar', 'colony', 'complex', 'building', 'house', 'first',
-                'second', 'third', 'ground', 'market', 'plaza', 'tower',
-                'center', 'centre', 'square'
-            }
+            if len(t) >= 5 and t not in ADDR_STOPWORDS
         ]
         for t in addr_tokens[:2]:
             keys.append(f"{country}_ADDR_{state}_{t}")
 
-    # Pass 6: Full First Token (Fallback when address/state is completely missing)
-    if first_tok and len(first_tok) >= 4:
+    # Pass 6: Postal Code + First Token Prefix
+    if pin and first_3:
+        keys.append(f"{country}_PIN_{pin}_{first_3}")
+
+    # Pass 7: Fallback when state is missing: single significant token (len >= 4)
+    if not state and first_tok and len(first_tok) >= 4:
         keys.append(f"{country}_TOK_{first_tok}")
 
     return keys
+
+
+def generate_candidate_pairs(
+    df_s1,
+    df_s2,
+    df_s3,
+    bucket_cap=25,
+    max_candidates=10,
+    selective_large_bucket=True,
+    large_bucket_cap=200
+):
+    """
+    Generate candidate pairs between S1 reference entities and (S2, S3) targets
+    using multi-branch inverted index, selective large-bucket recovery, and
+    internal candidate priority ranking before truncation.
+
+    Priority score components:
+    - Number of independent blocking branches that retrieved the candidate
+    - Learned branch reliability weights (state+token, 2tok_conjunction, state+addr_token)
+    - Multi-branch consensus bonus
+    - Bucket specificity (inverse bucket frequency)
+    - Cheap token-level name similarity & overlap
+    - Cheap token-level address similarity
+
+    Parameters
+    ----------
+    df_s1 : pd.DataFrame
+        Source 1 records (with entity_id, country, and normalized/raw fields).
+    df_s2 : pd.DataFrame
+        Source 2 records.
+    df_s3 : pd.DataFrame
+        Source 3 records.
+    bucket_cap : int
+        Maximum size of an index bucket to expand unconditionally. Default 25.
+    max_candidates : int, optional
+        Maximum candidates to retain per S1 entity (default 10).
+    selective_large_bucket : bool
+        If True, retrieves top candidates from buckets up to large_bucket_cap
+        using cheap token pre-filtering instead of discarding the bucket.
+    large_bucket_cap : int
+        Upper cap for selective large-bucket retrieval. Default 200.
+
+    Returns
+    -------
+    pd.DataFrame
+        DataFrame with columns ['source1_entity_id', 'candidate_entity_ids']
+        where candidate_entity_ids is a comma-separated string of IDs.
+    """
+    import math
+    from collections import defaultdict
+
+    BRANCH_WEIGHTS = {
+        'state+token': 4.0,
+        '2tok_conjunction': 4.0,
+        'state+addr_token': 3.5,
+        'state+second_token': 2.5,
+        'pin+prefix': 2.0,
+        'country+token_fallback': 2.0,
+        'state+prefix4': 1.5,
+        'state+prefix3': 1.5,
+    }
+
+    # Helper to extract lightweight token features for rapid scoring
+    def _extract_record_meta(row):
+        country = row.get('country', '')
+        name_clean = row.get('name_clean', '')
+        raw_name = row.get('business_name', '')
+        addr_clean = row.get('address_clean', '')
+
+        target_name = name_clean if name_clean else raw_name
+        name_toks = extract_significant_tokens(target_name)
+        addr_toks = [
+            t for t in re.findall(r'[a-zA-Z0-9]+', addr_clean.lower())
+            if len(t) >= 4 and t not in ADDR_STOPWORDS
+        ]
+        return {
+            'entity_id': row['entity_id'],
+            'country': country,
+            'name_tok_set': set(name_toks),
+            'addr_tok_set': set(addr_toks),
+        }
+
+    # 1. Index targets (S2 and S3)
+    block_index = defaultdict(list)
+    target_meta_map = {}
+
+    for df_target in [df_s2, df_s3]:
+        for row in df_target.to_dict('records'):
+            eid = row['entity_id']
+            target_meta_map[eid] = _extract_record_meta(row)
+            for k in get_blocking_keys(row):
+                block_index[k].append(eid)
+
+    bucket_sizes = {k: len(v) for k, v in block_index.items()}
+
+    # 2. Query candidates for each S1 entity with branch tracking & scoring
+    s1_ids = []
+    cand_lists = []
+
+    s1_records = df_s1.to_dict('records')
+    for row in s1_records:
+        s1_id = row['entity_id']
+        s1_meta = _extract_record_meta(row)
+        s1_name_toks = s1_meta['name_tok_set']
+        s1_addr_toks = s1_meta['addr_tok_set']
+        keys = get_blocking_keys(row)
+
+        cand_meta = defaultdict(lambda: {'branches': set(), 'spec': 0.0})
+
+        for k in keys:
+            if k not in block_index:
+                continue
+            bsize = bucket_sizes[k]
+            eff_cap = min(15, bucket_cap) if ('_ST_PRE4_' in k or '_ST_PRE3_' in k) else bucket_cap
+
+            # Infer branch type from key prefix
+            if '_ST_PRE4_' in k:
+                btype = 'state+prefix4'
+            elif '_ST_PRE3_' in k:
+                btype = 'state+prefix3'
+            elif '_ST_' in k:
+                btype = 'state+token'
+            elif '_2TOK_' in k:
+                btype = '2tok_conjunction'
+            elif '_ADDR_' in k:
+                btype = 'state+addr_token'
+            elif '_PIN_' in k:
+                btype = 'pin+prefix'
+            elif '_TOK_' in k:
+                btype = 'country+token_fallback'
+            else:
+                btype = 'other'
+
+            if bsize <= eff_cap:
+                spec = 1.0 / math.sqrt(bsize)
+                for cid in block_index[k]:
+                    cm = cand_meta[cid]
+                    cm['branches'].add(btype)
+                    cm['spec'] += spec
+            elif selective_large_bucket and bsize <= large_bucket_cap:
+                # Selective large-bucket retrieval: filter candidates by token overlap
+                large_matches = []
+                for cid in block_index[k]:
+                    t_cand = target_meta_map.get(cid)
+                    if not t_cand:
+                        continue
+                    n_overlap = len(s1_name_toks & t_cand['name_tok_set'])
+                    a_overlap = len(s1_addr_toks & t_cand['addr_tok_set'])
+                    if n_overlap >= 1 or a_overlap >= 2:
+                        large_matches.append((n_overlap * 2.0 + a_overlap, cid))
+                large_matches.sort(reverse=True)
+                for _, cid in large_matches[:2]:
+                    cm = cand_meta[cid]
+                    cm['branches'].add(btype)
+                    cm['spec'] += 0.1
+
+        if not cand_meta:
+            s1_ids.append(s1_id)
+            cand_lists.append("")
+            continue
+
+        # Score all collected candidates
+        scored_cands = []
+        for cid, meta in cand_meta.items():
+            t_cand = target_meta_map.get(cid)
+            if not t_cand:
+                continue
+
+            # Branch reliability weight + consensus bonus
+            b_score = sum(BRANCH_WEIGHTS.get(b, 1.0) for b in meta['branches'])
+            if len(meta['branches']) >= 2:
+                b_score += 3.0 * (len(meta['branches']) - 1)
+
+            # Bucket specificity score
+            spec_score = min(3.0, meta['spec'])
+
+            # Cheap Name Similarity (Jaccard + overlap)
+            t_name_toks = t_cand['name_tok_set']
+            inter_n = len(s1_name_toks & t_name_toks)
+            union_n = len(s1_name_toks | t_name_toks)
+            name_jaccard = inter_n / max(1, union_n)
+            name_score = name_jaccard * 4.0 + inter_n * 1.5
+
+            # Cheap Address Similarity (Jaccard + overlap)
+            t_addr_toks = t_cand['addr_tok_set']
+            inter_a = len(s1_addr_toks & t_addr_toks)
+            union_a = len(s1_addr_toks | t_addr_toks)
+            addr_jaccard = inter_a / max(1, union_a)
+            addr_score = addr_jaccard * 2.5 + inter_a * 0.8
+
+            total_score = b_score + spec_score + name_score + addr_score
+            scored_cands.append((total_score, cid))
+
+        # Rank candidates descending by priority score
+        scored_cands.sort(reverse=True)
+
+        if max_candidates is not None and len(scored_cands) > max_candidates:
+            final_cands = [cid for _, cid in scored_cands[:max_candidates]]
+        else:
+            final_cands = [cid for _, cid in scored_cands]
+
+        s1_ids.append(s1_id)
+        cand_lists.append(','.join(final_cands))
+
+    return pd.DataFrame({
+        'source1_entity_id': s1_ids,
+        'candidate_entity_ids': cand_lists
+    })
 
 
 # ═══════════════════════════════════════════════════════════════════════════════
