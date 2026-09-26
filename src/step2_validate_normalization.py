@@ -23,7 +23,7 @@ import pandas as pd
 from normalization import normalize_name, normalize_address, extract_landmarks
 
 # ── Paths ──
-BASE = r"c:\Users\ASUS\Downloads\konachiwa\dataset-20260925T160811Z-1-001\dataset"
+BASE = r"dataset"
 TRAIN = os.path.join(BASE, "train")
 TEST  = os.path.join(BASE, "test")
 

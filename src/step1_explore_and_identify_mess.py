@@ -28,8 +28,8 @@ print("=" * 80)
 print("STEP 1: LOADING DATA INTO DATAFRAMES")
 print("=" * 80)
 
-TRAIN_DIR = "dataset-20260925T160811Z-1-001/dataset/train"
-TEST_DIR  = "dataset-20260925T160811Z-1-001/dataset/test"
+TRAIN_DIR = "dataset/train"
+TEST_DIR  = "dataset/test"
 
 # Train DataFrames
 train_s1 = pd.read_csv(f"{TRAIN_DIR}/train_source1.tsv", sep="\t")

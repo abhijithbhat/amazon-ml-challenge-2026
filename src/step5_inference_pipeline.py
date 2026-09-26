@@ -19,7 +19,7 @@ Validation:
     python utils-20260925T171059Z-1-001/utils/validate_submission.py \
         --matching output/matching_results.tsv \
         --candidate output/candidate_pairs.tsv \
-        --test-dir dataset-20260925T160811Z-1-001/dataset/test
+        --test-dir dataset/test
 =============================================================================
 """
 
@@ -40,9 +40,9 @@ from blocking_features import get_blocking_keys
 from comparison_features import compute_pair_features, FEATURE_COLS
 
 # ── Paths ──
-TEST_DIR = r"c:\Users\ASUS\Downloads\konachiwa\dataset-20260925T160811Z-1-001\dataset\test"
-OUTPUT_DIR = r"c:\Users\ASUS\Downloads\konachiwa\output"
-MODEL_PATH = r"c:\Users\ASUS\Downloads\konachiwa\trained_model.pkl"
+TEST_DIR = r"dataset/test"
+OUTPUT_DIR = r"output"
+MODEL_PATH = r"output/trained_model.pkl"
 
 S1_FILE = os.path.join(TEST_DIR, "test_source1.tsv")
 S2_FILE = os.path.join(TEST_DIR, "test_source2.tsv")
@@ -231,7 +231,7 @@ def run_pipeline(sample_size=None):
 
     # 5. Run Submission Validator
     print(f"\n[5/5] Running official submission validator (validate_submission.py)...")
-    validator_script = r"c:\Users\ASUS\Downloads\konachiwa\utils-20260925T171059Z-1-001\utils\validate_submission.py"
+    validator_script = r"utils/validate_submission.py"
     if os.path.isfile(validator_script):
         cmd = (
             f"python \"{validator_script}\" "

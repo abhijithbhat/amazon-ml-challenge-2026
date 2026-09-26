@@ -1,9 +1,9 @@
 import os
 import subprocess
 
-test_dir = r"c:\Users\ASUS\Downloads\konachiwa\dataset-20260925T160811Z-1-001\dataset\test"
+test_dir = r"dataset/test"
 s1_path = os.path.join(test_dir, "test_source1.tsv")
-out_dir = r"c:\Users\ASUS\Downloads\konachiwa\output"
+out_dir = r"output"
 os.makedirs(out_dir, exist_ok=True)
 
 match_path = os.path.join(out_dir, "matching_results.tsv")
@@ -51,7 +51,7 @@ with open(s1_path, 'r', encoding='utf-8') as f_in, \
 
 print(f"Wrote {count:,} S1 rows.")
 
-val_script = r"c:\Users\ASUS\Downloads\konachiwa\utils-20260925T171059Z-1-001\utils\validate_submission.py"
+val_script = r"utils/validate_submission.py"
 cmd = f'python "{val_script}" --matching "{match_path}" --candidate "{cand_path}" --test-dir "{test_dir}"'
 res = subprocess.run(cmd, shell=True, capture_output=True, text=True)
 print("\n" + res.stdout)

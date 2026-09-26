@@ -50,7 +50,7 @@ sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding='utf-8', errors='repla
 #  CONFIGURATION
 # ═══════════════════════════════════════════════════════════════════════════════
 
-DATA_DIR = os.path.join('dataset-20260925T160811Z-1-001', 'dataset', 'train')
+DATA_DIR = os.path.join('dataset', 'train')
 S1_FILE = os.path.join(DATA_DIR, 'train_source1.tsv')
 S2_FILE = os.path.join(DATA_DIR, 'train_source2.tsv')
 S3_FILE = os.path.join(DATA_DIR, 'train_source3.tsv')

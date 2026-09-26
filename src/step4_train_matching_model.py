@@ -39,7 +39,7 @@ from comparison_features import compute_pair_features, FEATURE_COLS
 #  CONFIG
 # ═══════════════════════════════════════════════════════════════════════════════
 
-BASE = r"c:\Users\ASUS\Downloads\konachiwa\dataset-20260925T160811Z-1-001\dataset\train"
+BASE = r"dataset/train"
 PATH_S1 = os.path.join(BASE, "train_source1.tsv")
 PATH_S2 = os.path.join(BASE, "train_source2.tsv")
 PATH_S3 = os.path.join(BASE, "train_source3.tsv")
