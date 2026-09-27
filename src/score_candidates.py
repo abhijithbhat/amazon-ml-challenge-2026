@@ -57,15 +57,57 @@ except (ImportError, AttributeError):
     except (ImportError, AttributeError):
         from rapidfuzz.fuzz import ratio as _rf_quick_ratio
 
+try:
+    from rapidfuzz.distance.JaroWinkler import similarity as _rf_jaro_winkler
+except (ImportError, AttributeError):
+    try:
+        from rapidfuzz.distance import jaro_winkler as _rf_jw_mod
+        _rf_jaro_winkler = getattr(_rf_jw_mod, "similarity", None)
+    except (ImportError, AttributeError):
+        _rf_jaro_winkler = None
+
 # Domain normalization and pairwise feature extraction
 try:
     from normalization import normalize_name, normalize_address
-    from comparison_features import compute_pair_features, FEATURE_COLS
+    from comparison_features import compute_pair_features, FEATURE_COLS, jaro_winkler_similarity
 except ImportError:
     from src.normalization import normalize_name, normalize_address
-    from src.comparison_features import compute_pair_features, FEATURE_COLS
+    from src.comparison_features import compute_pair_features, FEATURE_COLS, jaro_winkler_similarity
 
 _DIGIT_RE = re.compile(r"\d+")
+
+
+def calc_addr_jw(s1: str, s2: str) -> float:
+    """Fast Jaro-Winkler string similarity in [0.0, 1.0]."""
+    if s1 == s2:
+        return 1.0
+    if not s1 or not s2:
+        return 0.0
+    if _rf_jaro_winkler is not None:
+        return float(_rf_jaro_winkler(s1, s2))
+    return float(jaro_winkler_similarity(s1, s2))
+
+
+def extract_significant_digits(text: str) -> Set[str]:
+    """Extract significant digits (house numbers, postal codes, unit numbers).
+    Filters out trivial single digits ('0', '1', '2') to prevent false matches."""
+    if not text:
+        return set()
+    return {d for d in _DIGIT_RE.findall(text) if len(d) > 1 or int(d) > 2}
+
+
+def get_digit_status(digits_a: Set[str], digits_b: Set[str]) -> str:
+    """
+    Claude's 3-way digit state for address comparison:
+      - 'absent':   Landmark address with no digits — score normally with model
+      - 'confirm':  Shared significant digits (anchors the address)
+      - 'conflict': Both have digits, but zero overlap (different house/street numbers)
+    """
+    if not digits_a or not digits_b:
+        return "absent"   # Landmark address with no digits — score normally with model
+    if digits_a & digits_b:
+        return "confirm"  # Shared significant digits
+    return "conflict"     # Both have digits, but zero overlap (different house/street numbers)
 
 # ── Accent-Folding & French Legal Suffix Cleaning ────────────────────────────
 _FRENCH_LEGAL_SUFFIXES = re.compile(
@@ -212,8 +254,8 @@ def run_direct_scoring(
     t0 = time.time()
 
     s1_ordered_ids: List[str] = []
-    # s1_lookup: s1_eid -> (nc, ac, country, digits_tuple)
-    s1_lookup: Dict[str, Tuple[str, str, str, Tuple[str, ...]]] = {}
+    # s1_lookup: s1_eid -> (nc, ac, country, digits_set)
+    s1_lookup: Dict[str, Tuple[str, str, str, Set[str]]] = {}
 
     for chunk in pd.read_csv(s1_path, sep="\t", chunksize=100_000, dtype=str):
         chunk = chunk.fillna("")
@@ -227,7 +269,7 @@ def run_direct_scoring(
 
         for eid, nc, ac, c in zip(eids, norm_names, norm_addrs, countries):
             s1_ordered_ids.append(eid)
-            digits = tuple(_DIGIT_RE.findall(ac))
+            digits = extract_significant_digits(ac)
             s1_lookup[eid] = (nc, ac, c.strip().upper(), digits)
 
     print(f"  Loaded {len(s1_lookup):,} Source 1 records in {time.time()-t0:.2f}s.")
@@ -267,7 +309,7 @@ def run_direct_scoring(
             norm_addrs = [fold_accents_and_clean(normalize_address(a, c)) for a, c in zip(v_addrs, v_countries)]
 
             for eid, nc, ac, c in zip(v_eids, norm_names, norm_addrs, v_countries):
-                digits = set(_DIGIT_RE.findall(ac))
+                digits = extract_significant_digits(ac)
                 vendor_lookup[eid] = (nc, ac, c.strip().upper(), digits)
 
         print(f"  - {label}: Retained {matched_records:,} / {total_scanned:,} rows in {time.time()-t_v:.2f}s.")
@@ -292,7 +334,7 @@ def run_direct_scoring(
 
     batch_s1: List[str] = []
     batch_vx: List[str] = []
-    batch_digit_overlap: List[bool] = []
+    batch_digit_status: List[str] = []
     batch_s1_country: List[str] = []
     batch_features: List[List[float]] = []
 
@@ -305,23 +347,29 @@ def run_direct_scoring(
         probs = model.predict_proba(X)[:, 1]
         tier3_model_scored += len(probs)
 
-        for s1, vx, has_dig, prob, s1c in zip(batch_s1, batch_vx, batch_digit_overlap, probs, batch_s1_country):
+        for s1, vx, d_status, prob, s1c in zip(
+            batch_s1, batch_vx, batch_digit_status, probs, batch_s1_country
+        ):
             prob = float(prob)
             # Country-specific threshold calibration
             effective_threshold = 0.88 if s1c in _TIGHT_THRESHOLD_COUNTRIES else threshold
             effective_fallback = max(fallback_threshold, 0.92) if s1c in _TIGHT_THRESHOLD_COUNTRIES else fallback_threshold
 
-            # Decision Rules:
-            # - prob >= effective_fallback (0.90 / 0.92 for FR/BE)
-            # - prob >= effective_threshold (0.83 / 0.88 for FR/BE) if has_digit_overlap
-            if prob >= effective_fallback:
-                passing_pairs.append((prob, s1, vx))
-            elif prob >= effective_threshold and has_dig:
-                passing_pairs.append((prob, s1, vx))
+            # 3-Way Digit Signal Decision Rules:
+            # - 'confirm':  Shared significant digits anchor address -> accept if prob >= effective_threshold (0.83 / 0.88)
+            # - 'absent':   Landmark address with no digits -> score normally with model using fallback threshold (0.90 / 0.92)
+            # - 'conflict': Both have digits, but zero overlap (different house/street numbers) -> suppress to prevent false chain-store merges
+            if d_status == "confirm":
+                if prob >= effective_threshold:
+                    passing_pairs.append((prob, s1, vx))
+            elif d_status == "absent":
+                if prob >= effective_fallback:
+                    passing_pairs.append((prob, s1, vx))
+            # d_status == 'conflict' is suppressed to protect true singletons and prevent false chain-store merges
 
         batch_s1.clear()
         batch_vx.clear()
-        batch_digit_overlap.clear()
+        batch_digit_status.clear()
         batch_s1_country.clear()
         batch_features.clear()
 
@@ -343,26 +391,28 @@ def run_direct_scoring(
                 continue
             v_nc, v_ac, v_country, v_digits = v_info
 
-            # Check digit overlap (filter trivial single-character digits)
-            s1_sig_digits = {d for d in s1_digits if len(d) > 1 or int(d) > 2}
-            v_sig_digits = {d for d in v_digits if len(d) > 1 or int(d) > 2}
-            has_digit_overlap = bool(s1_sig_digits and v_sig_digits and s1_sig_digits & v_sig_digits)
+            # Check 3-way digit status: 'confirm', 'absent', or 'conflict'
+            digit_status = get_digit_status(s1_digits, v_digits)
 
             # ── Tier 1: Fast C-Level Pre-Filter Gate ────────────────────────
             sim_score = _rf_quick_ratio(s1_nc, v_nc)
-            if sim_score < 45.0 and not has_digit_overlap:
+            if sim_score < 45.0 and digit_status != "confirm":
                 tier1_rejected += 1
                 continue
 
-            # ── Chain-Store False Merge Guard ───────────────────────────────
-            # If names match exactly but addresses have ZERO digit overlap,
-            # this is likely two different branches of the same chain → suppress.
-            if s1_nc == v_nc and not has_digit_overlap and s1_sig_digits:
-                tier1_rejected += 1
-                continue
-
-            # ── Tier 2: Exact-Anchor Bypass ────────────────────────────────
-            if s1_nc == v_nc and has_digit_overlap:
+            # ── Tier 2: Restricted Exact-Anchor Bypass ─────────────────────
+            # Only bypass the model if ALL 4 criteria are strictly met:
+            # 1. Exact clean name match: s1_nc == v_nc
+            # 2. Name length >= 6 (avoids short acronyms/common words: 'KFC', 'ATM', etc.)
+            # 3. Strong address confirmation: addr_jw >= 0.80
+            # 4. Non-empty digit overlap: bool(s1_digits & v_digits)
+            # If ANY condition is not met, the pair MUST pass to Tier 3 to be scored by model.
+            if (
+                s1_nc == v_nc
+                and len(s1_nc) >= 6
+                and bool(s1_digits & v_digits)
+                and calc_addr_jw(s1_ac, v_ac) >= 0.80
+            ):
                 tier2_exact_bypassed += 1
                 passing_pairs.append((1.0, s1_id, vx_id))
                 continue
@@ -376,7 +426,7 @@ def run_direct_scoring(
 
             batch_s1.append(s1_id)
             batch_vx.append(vx_id)
-            batch_digit_overlap.append(has_digit_overlap)
+            batch_digit_status.append(digit_status)
             batch_s1_country.append(s1_country)
             batch_features.append(feat_vec)
 
