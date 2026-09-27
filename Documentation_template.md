@@ -43,7 +43,7 @@ The pipeline separates candidate generation from scoring deliberately — the tw
 
 ### 3.1 Architecture
 
-Candidate generation is implemented in `src/generate_test_candidates.py` using a **Pure Selective PRE3** strategy. The design processes the three countries in sequence (France, then US, then India) in isolated partitions. For each country, all Source 2 and Source 3 records are indexed into blocking buckets before any Source 1 queries are made; memory is released between country partitions, keeping peak RAM under 1.8 GB.
+Candidate generation is implemented in `src/generate_test_candidates.py` using a **Pure Selective PRE3** strategy. The design processes the three countries in sequence (France, then US, then India) in isolated partitions. For each country, all Source 2 and Source 3 records are indexed into blocking buckets before any Source 1 queries are made; memory is released between country partitions. The implementation code comment estimates peak RSS at approximately 1.8 GB during the largest country partition; no persistent run log was recorded.
 
 Ten parallel worker processes (via `ProcessPoolExecutor`) handle normalization of raw business names and addresses.
 
@@ -75,7 +75,7 @@ score = sum of branch_weights for each blocking branch hit
       + addr_jaccard * 2.5 + addr_token_overlap * 0.8
 ```
 
-Learned branch reliability weights:
+Fixed (manually calibrated) branch-reliability weights (hardcoded constants in `BRANCH_WEIGHTS`, not trained by any model):
 
 | Branch type | Weight |
 |---|---|
@@ -149,15 +149,23 @@ Significant name tokens exclude legal suffixes, stop words, and honorifics (the 
 
 ### 4.3 Model Architecture and Training
 
-**Model type:** `sklearn.ensemble.RandomForestClassifier`
+**Model type:** `sklearn.ensemble.RandomForestClassifier` (sklearn 1.9.1)
 
-| Hyperparameter | Value |
+The following hyperparameters are verified directly from the serialized `output/trained_model.pkl` submission artifact via binary inspection:
+
+| Hyperparameter | Value (serialized pkl) |
 |---|---|
 | `n_estimators` | 100 |
-| `max_depth` | 10 |
-| `min_samples_leaf` | 4 |
+| `max_depth` | `None` (unlimited) |
+| `min_samples_leaf` | 1 |
+| `min_samples_split` | 2 |
 | `class_weight` | `'balanced'` |
+| `bootstrap` | `True` |
+| `oob_score` | `False` |
+| `n_jobs` | 1 |
 | `random_state` | 42 |
+
+> **Note:** The current `src/step4_train_matching_model.py` training script specifies `max_depth=10` and `min_samples_leaf=4`, which differ from the above. The serialized production artifact takes precedence for documentation purposes. The pkl represents the model actually used to produce the submitted `output/matching_results.tsv`.
 
 **Training data construction** (`src/step4_train_matching_model.py`):
 
@@ -287,16 +295,16 @@ Our solution demonstrates that a carefully engineered blocking and rule-augmente
 
 The complete, runnable pipeline is in `code/business_entity_resolution/` (source under `src/`, with `README.md` and `requirements.txt`). The working copy of each source file is mirrored identically in the top-level `src/` directory.
 
-**Entry points to reproduce `output/matching_results.tsv`:**
+**A. Reproducing the submitted pipeline (faithful reproduction)**
+
+The submission artifact `output/trained_model.pkl` is already committed to the repository. To reproduce `output/matching_results.tsv` faithfully using the exact submitted model, run only Steps 1 and 2 below — **do not retrain the model**:
 
 ```bash
 # Step 1 — Candidate generation (produces output/candidate_pairs.tsv)
 python src/generate_test_candidates.py
 
-# Step 2 — Train model (produces output/trained_model.pkl)
-python src/step4_train_matching_model.py
-
-# Step 3 — Score candidates (produces output/matching_results.tsv)
+# Step 2 — Score candidates using the supplied trained_model.pkl
+#           (produces output/matching_results.tsv)
 python src/score_candidates.py \
     --candidate-file output/candidate_pairs.tsv \
     --matching-file  output/matching_results.tsv \
@@ -304,6 +312,16 @@ python src/score_candidates.py \
     --model          output/trained_model.pkl \
     --threshold      0.83 \
     --fallback-threshold 0.90
+```
+
+**B. Optional model retraining (NOT required for submission reproduction)**
+
+Running the training script is optional and produces a new `trained_model.pkl` that may differ from the submitted artifact due to dataset sampling or environment differences. It is provided for transparency and reproducibility of the training methodology, not as a required step to reproduce the submission:
+
+```bash
+# Optional — retrain the model from scratch (overwrites output/trained_model.pkl)
+# Run from the src/ directory where the dataset/ folder is accessible
+python src/step4_train_matching_model.py
 ```
 
 **Key source files:**
