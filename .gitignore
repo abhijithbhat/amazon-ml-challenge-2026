@@ -19,3 +19,9 @@ output/candidate_pairs.tsv
 
 # Intermediate feature samples
 feature_matrix_sample.tsv
+
+# Ignore zip archives and submission packages (>100MB exceeds GitHub limits)
+*.zip
+kaggle_bundle/
+pod_2_data_and_features_submission/
+output/*_VERIFIED.tsv
