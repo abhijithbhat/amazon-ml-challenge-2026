@@ -33,8 +33,8 @@ Key pipeline stages:
 2. **Selective Multi-Pass Candidate Blocking (`src/generate_test_candidates.py`):**
    - Hard country isolation (`France` $\to$ `US` $\to$ `India`).
    - Pure selective PRE3 blocking with multi-branch consensus scoring.
-   - Caps candidates to $K \le 12$ high-quality candidates per entity while maintaining $>98\%$ recall.
-   - Peak RAM strictly bounded under 1.8 GB.
+   - Caps candidates to $K \le 12$ high-quality candidates per entity while maintaining 93.86% candidate recall.
+   - Peak RAM bounded to ~5.87 GB (system with at least 8 GB RAM recommended).
 3. **High-Speed Direct Scorer (`src/score_candidates.py`):**
    - 3-Tier Cascaded Evaluation:
      - Tier 1: Fast C-level RapidFuzz quick-ratio pre-filter.
@@ -125,7 +125,7 @@ python3 src/generate_test_candidates.py
 ```
 
 - **Runtime:** ~15–20 minutes (using 10 parallel worker processes).
-- **RAM Footprint:** Strictly $< 1.8$ GB peak.
+- **RAM Footprint:** Peaks at ~5.87 GB process memory (system with at least 8 GB RAM recommended to prevent out-of-memory errors).
 - **Output:** `output/candidate_pairs.tsv` containing exactly 1,732,544 rows in the original sequence of `test_source1.tsv`.
 
 ---
