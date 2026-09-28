@@ -33,57 +33,11 @@ This repository contains the end-to-end, production-grade Machine Learning solut
 
 ## 🏗️ System Architecture
 
-Entity resolution at scale requires a multi-stage funnel: comparing every Source 1 entity against all Source 2 and Source 3 records would require evaluating **over 17 trillion pairs**. Our architecture funnels this down to high-precision matches via five decoupled, auditable stages:
+Entity resolution at scale requires a multi-stage funnel: comparing every Source 1 entity against all Source 2 and Source 3 records would require evaluating **over 17 trillion pairs**. Our architecture funnels this down to high-precision matches via an auditable, six-stage pipeline:
 
-```mermaid
-flowchart TD
-    subgraph S1["1. Raw Ingestion & Source Profiling"]
-        A1[Source 1: 1.73M Reference Records]
-        A2[Source 2: 4.88M Vendor Records]
-        A3[Source 3: 5.08M Vendor Records]
-    end
-
-    subgraph S2["2. Noise-Resilient Normalization"]
-        B1["Country Isolation (FR -> US -> IN)"]
-        B2["Multilingual Legal Suffix Stripping & Mapping"]
-        B3["Indic Script Preservation (Hindi, Tamil, Telugu, etc.)"]
-        B4["Saint vs. Street & Landmark Disambiguation"]
-    end
-
-    subgraph S3["3. Pure Selective PRE3 Candidate Blocking"]
-        C1["7 Complementary Blocking Key Types"]
-        C2["Frequency-Based Inverted Index Filtering"]
-        C3["Bucket Admission Cap (max 8) & Large Filter (100)"]
-        C4["Hard Cap: K <= 12 Candidates / S1 (Avg 7.48)"]
-    end
-
-    subgraph S4["4. Pairwise Feature Engineering (10-Dim)"]
-        D1["Name & Address Jaro-Winkler Similarities"]
-        D2["Token Jaccard & Token Overlap Ratios"]
-        D3["Length Ratios, Exact Match Flags"]
-        D4["State, Postal & Significant Digit Matching"]
-    end
-
-    subgraph S5["5. Cascaded 3-Tier Hybrid Scoring & Digit Guard"]
-        E1["Tier 1: C-Level RapidFuzz Quick-Ratio Pre-Filter (>85% pruned)"]
-        E2["Tier 2: Exact-Anchor Bypass (prob = 1.0)"]
-        E3["Tier 3: 100-Tree Random Forest Classifier"]
-        E4["3-Way Digit Conflict Guard: confirm / absent / conflict"]
-        E5["Country-Specific Decision Boundaries (US/IN vs. FR)"]
-    end
-
-    subgraph S6["6. Greedy 1-to-1 Disjoint Assignment"]
-        F1["Multi-Candidate Conflict Resolution"]
-        F2["Singleton Protection (Empty String Output)"]
-        F3["Submission Generation & Format Validation (PASS)"]
-    end
-
-    S1 --> S2
-    S2 --> S3
-    S3 --> S4
-    S4 --> S5
-    S5 --> S6
-```
+<p align="center">
+  <img src="assets/pipeline_architecture.jpg" alt="Amazon ML Challenge 2026: Multi-Source Business Entity Resolution Pipeline" width="750"/>
+</p>
 
 ---
 
